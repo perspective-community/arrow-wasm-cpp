@@ -61,21 +61,41 @@ set(ARROW_ORC OFF)
 set(ARROW_BUILD_STATIC ON)
 set(ARROW_NO_DEPRECATED_API ON)
 
-configure_file("${CMAKE_SOURCE_DIR}/cmake/arrow.txt.in"
-               arrow-download/CMakeLists.txt)
+function (build_dep name)
+    configure_file("${CMAKE_SOURCE_DIR}/cmake/${name}.txt.in"
+                ${name}-download/CMakeLists.txt)
 
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/arrow-download )
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/${name}-download )
 
-execute_process(COMMAND ${CMAKE_COMMAND} --build .
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/arrow-download )
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/${name}-download )
 
-configure_file(${CMAKE_SOURCE_DIR}/cmake/arrow/CMakeLists.txt ${CMAKE_BINARY_DIR}/arrow-src/cpp/ COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/arrow/config.h ${CMAKE_BINARY_DIR}/arrow-src/cpp/src/arrow/util/ COPYONLY)
+	if(${name} STREQUAL arrow)
+        configure_file(${CMAKE_SOURCE_DIR}/cmake/arrow/CMakeLists.txt ${CMAKE_BINARY_DIR}/arrow-src/cpp/ COPYONLY)
+        configure_file(${CMAKE_SOURCE_DIR}/cmake/arrow/config.h ${CMAKE_BINARY_DIR}/arrow-src/cpp/src/arrow/util/ COPYONLY)
 
-add_subdirectory(${CMAKE_BINARY_DIR}/arrow-src/cpp
-                 ${CMAKE_BINARY_DIR}/arrow-build)
+        add_subdirectory(${CMAKE_BINARY_DIR}/arrow-src/cpp
+                        ${CMAKE_BINARY_DIR}/arrow-build)
 
+        include_directories(${CMAKE_BINARY_DIR}/arrow-src/cpp/src/)
+
+    else()
+
+        add_subdirectory(${CMAKE_BINARY_DIR}/${name}-src
+            ${CMAKE_BINARY_DIR}/${name}-build
+            EXCLUDE_FROM_ALL)
+
+        include_directories(${CMAKE_BINARY_DIR}/${name}-src/extras/${name}/include)
+        include_directories(${CMAKE_BINARY_DIR}/${name}-src/include)
+        include_directories(${CMAKE_BINARY_DIR}/${name}-src)
+
+    endif()
+endfunction()
+
+
+build_dep(arrow)
+build_dep(rapidjson)
 
 add_executable(arrow_esm src/emscripten.cpp)
 set_target_properties(arrow_esm PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./esm/")

@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.7.2)
 
 project(apachearrow-download NONE)
 
-set(ARROW_SIMD_LEVEL "")
-
 include(ExternalProject)
 ExternalProject_Add(apachearrow
     GIT_REPOSITORY    https://github.com/apache/arrow.git
