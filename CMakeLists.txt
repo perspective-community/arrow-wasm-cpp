@@ -35,6 +35,8 @@ set(CMAKE_C_LINK_FLAGS "")
 set(CMAKE_CXX_LINK_FLAGS "")
 set(HAVE_FLAG_SEARCH_PATHS_FIRST 0)
 
+cmake_policy(SET CMP0077 NEW)
+
 project(arrow)
 
 set(CMAKE_BUILD_TYPE "Release")
@@ -61,6 +63,13 @@ set(ARROW_ORC OFF)
 set(ARROW_BUILD_STATIC ON)
 set(ARROW_NO_DEPRECATED_API ON)
 
+set(RAPIDJSON_BUILD_DOC OFF)
+set(RAPIDJSON_BUILD_EXAMPLES OFF)
+set(RAPIDJSON_BUILD_TESTS OFF)
+set(RAPIDJSON_BUILD_THIRDPARTY_GTEST OFF)
+set(RAPIDJSON_BUILD_CXX11 ON)
+option(RAPIDJSON_ENABLE_INSTRUMENTATION_OPT OFF)
+
 function (build_dep name)
     configure_file("${CMAKE_SOURCE_DIR}/cmake/${name}.txt.in"
                 ${name}-download/CMakeLists.txt)
@@ -74,28 +83,24 @@ function (build_dep name)
 	if(${name} STREQUAL arrow)
         configure_file(${CMAKE_SOURCE_DIR}/cmake/arrow/CMakeLists.txt ${CMAKE_BINARY_DIR}/arrow-src/cpp/ COPYONLY)
         configure_file(${CMAKE_SOURCE_DIR}/cmake/arrow/config.h ${CMAKE_BINARY_DIR}/arrow-src/cpp/src/arrow/util/ COPYONLY)
-
-        add_subdirectory(${CMAKE_BINARY_DIR}/arrow-src/cpp
-                        ${CMAKE_BINARY_DIR}/arrow-build)
-
         include_directories(${CMAKE_BINARY_DIR}/arrow-src/cpp/src/)
-
-    else()
-
-        add_subdirectory(${CMAKE_BINARY_DIR}/${name}-src
+        add_subdirectory(${CMAKE_BINARY_DIR}/${name}-src/cpp
             ${CMAKE_BINARY_DIR}/${name}-build
             EXCLUDE_FROM_ALL)
 
-        include_directories(${CMAKE_BINARY_DIR}/${name}-src/extras/${name}/include)
+    else()
         include_directories(${CMAKE_BINARY_DIR}/${name}-src/include)
         include_directories(${CMAKE_BINARY_DIR}/${name}-src)
-
+        add_subdirectory(${CMAKE_BINARY_DIR}/${name}-src
+            ${CMAKE_BINARY_DIR}/${name}-build
+            EXCLUDE_FROM_ALL)
     endif()
 endfunction()
 
 
 build_dep(arrow)
 build_dep(rapidjson)
+
 
 add_executable(arrow_esm src/emscripten.cpp)
 set_target_properties(arrow_esm PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./esm/")

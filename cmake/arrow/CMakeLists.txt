@@ -162,7 +162,11 @@ endif()
 
 add_library(arrow STATIC ${ARROW_SRCS})
 
+include_directories(${CMAKE_BINARY_DIR}/rapidjson-src/include)
+include_directories(/usr/local/include/)
+
 target_compile_definitions(arrow PUBLIC ARROW_NO_DEPRECATED_API)
+target_compile_definitions(arrow PUBLIC __x86_64)
 target_compile_definitions(arrow PUBLIC ARROW_STATIC)
 
 # will need built boost filesystem and system .lib to work, even though
