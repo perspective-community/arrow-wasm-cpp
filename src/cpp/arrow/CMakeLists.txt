@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.7.2)
-project(exprtkjs)
+project(arrow)
 include(CheckCCompilerFlag)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(NOT DEFINED EXPRTKJS_CMAKE_MODULE_PATH)
-	set(EXPRTKJS_CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../../cmake/")
+if(NOT DEFINED ARROW_WASM_CMAKE_MODULE_PATH)
+	set(ARROW_WASM_CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../../cmake/")
 endif()
-set(CMAKE_MODULE_PATH "${EXPRTKJS_CMAKE_MODULE_PATH}/modules" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${ARROW_WASM_CMAKE_MODULE_PATH}/modules" ${CMAKE_MODULE_PATH})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	set(WIN32 ON)
@@ -35,18 +35,19 @@ function(string_starts_with str search)
 endfunction()
 
 set(BUILD_MESSAGE "")
-function (exprtkjs_build_message message)
+function (arrow_wasm_build_message message)
 	set(BUILD_MESSAGE "${BUILD_MESSAGE}\n${message}")
 endfunction()
 
 ###################################################
 # Helper to grab dependencies from remote sources #
 ###################################################
-function (exprtkjs_build_dep name cmake_file)
+function (arrow_wasm_build_dep name)
 	if(EXISTS ${CMAKE_BINARY_DIR}/${name}-build)
-		exprtkjs_build_message("${Cyan}Dependency found - not rebuilding - ${CMAKE_BINARY_DIR}/${name}-build${ColorReset}")
+		arrow_wasm_build_message("${Cyan}Dependency found - not rebuilding - ${CMAKE_BINARY_DIR}/${name}-build${ColorReset}")
 	else()
-		configure_file(${cmake_file} ${name}-download/CMakeLists.txt)
+		configure_file("${ARROW_WASM_CMAKE_MODULE_PATH}/${name}.txt.in"
+				${name}-download/CMakeLists.txt)
 
 		execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
 			RESULT_VARIABLE result
@@ -67,8 +68,8 @@ function (exprtkjs_build_dep name cmake_file)
 
 	if(${name} STREQUAL arrow)
 		# Overwrite arrow's CMakeLists with our custom, minimal CMakeLists.
-		configure_file(${EXPRTKJS_CMAKE_MODULE_PATH}/arrow/CMakeLists.txt ${CMAKE_BINARY_DIR}/arrow-src/cpp/ COPYONLY)
-		configure_file(${EXPRTKJS_CMAKE_MODULE_PATH}/arrow/config.h ${CMAKE_BINARY_DIR}/arrow-src/cpp/src/arrow/util/ COPYONLY)
+		configure_file(${ARROW_WASM_CMAKE_MODULE_PATH}/arrow/CMakeLists.txt ${CMAKE_BINARY_DIR}/arrow-src/cpp/ COPYONLY)
+		configure_file(${ARROW_WASM_CMAKE_MODULE_PATH}/arrow/config.h ${CMAKE_BINARY_DIR}/arrow-src/cpp/src/arrow/util/ COPYONLY)
 		add_subdirectory(${CMAKE_BINARY_DIR}/arrow-src/cpp/
 			${CMAKE_BINARY_DIR}/arrow-build
 			EXCLUDE_FROM_ALL)
@@ -97,7 +98,7 @@ find_package(Color)
 
 option(CMAKE_BUILD_TYPE "Release/Debug build" RELEASE)
 
-if(DEFINED ENV{EXPRTKJS_DEBUG})
+if(DEFINED ENV{ARROW_WASM_DEBUG})
 	set(CMAKE_BUILD_TYPE DEBUG)
 else()
 	if (NOT DEFINED CMAKE_BUILD_TYPE)
@@ -107,15 +108,15 @@ endif()
 
 set(BUILD_MESSAGE "${BUILD_MESSAGE}\n${Cyan}Building WASM binding${ColorReset}")
 
-if(NOT DEFINED EXPRTKJS_CPP_SRC)
-	set(EXPRTKJS_CPP_SRC "${CMAKE_SOURCE_DIR}")
+if(NOT DEFINED ARROW_WASM_CPP_SRC)
+	set(ARROW_WASM_CPP_SRC "${CMAKE_SOURCE_DIR}")
 endif()
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER )
 
 if(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
 	set(BUILD_MESSAGE "${BUILD_MESSAGE}\n${Red}Building DEBUG${ColorReset}")
-	add_definitions(-DEXPRTKJS_DEBUG)
+	add_definitions(-DARROW_WASM_DEBUG)
 else()
 	set(BUILD_MESSAGE "${BUILD_MESSAGE}\n${Cyan}Building RELEASE${ColorReset}")
 endif()
@@ -178,8 +179,34 @@ endif()
 
 set(ASYNC_MODE_FLAGS "")
 
-# Build exprtk for expression parsing
-exprtkjs_build_dep("exprtk" "${EXPRTKJS_CMAKE_MODULE_PATH}/exprtk.txt.in")
+# Setup and build deps
+# set arrow flags
+set(ARROW_BUILD_EXAMPLES OFF)
+set(ARROW_BUILD_INTEGRATION OFF)
+set(ARROW_BUILD_TESTS OFF)
+set(ARROW_CUDA OFF)
+set(ARROW_DATASET OFF)
+set(ARROW_FUZZING OFF)
+set(ARROW_GANDIVA OFF)
+set(ARROW_OPTIONAL_INSTALL OFF)
+set(ARROW_PARQUET OFF)
+set(ARROW_PYTHON OFF)
+set(ARROW_JNI OFF)
+set(ARROW_ORC OFF)
+set(ARROW_ORC OFF)
+
+set(ARROW_BUILD_STATIC ON)
+set(ARROW_NO_DEPRECATED_API ON)
+
+set(RAPIDJSON_BUILD_DOC OFF)
+set(RAPIDJSON_BUILD_EXAMPLES OFF)
+set(RAPIDJSON_BUILD_TESTS OFF)
+set(RAPIDJSON_BUILD_THIRDPARTY_GTEST OFF)
+set(RAPIDJSON_BUILD_CXX11 ON)
+option(RAPIDJSON_ENABLE_INSTRUMENTATION_OPT OFF)
+
+arrow_wasm_build_dep(arrow)
+arrow_wasm_build_dep(rapidjson)
 #####################
 
 set(CMAKE_C_FLAGS " \
@@ -193,7 +220,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 set (SOURCE_FILES
-    ${EXPRTKJS_CPP_SRC}/src/cpp/base.cpp
+    ${ARROW_WASM_CPP_SRC}/src/cpp/base.cpp
 )
 
 if (WIN32)
@@ -211,28 +238,28 @@ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} \
     -s NO_FILESYSTEM=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s MODULARIZE=1 \
-    -s EXPORT_NAME=\"load_exprtkjs\" \
+    -s EXPORT_NAME=\"load_arrow_wasm\" \
     -s MAXIMUM_MEMORY=4gb \
     -s USE_ES6_IMPORT_META=0 \
     -s EXPORTED_FUNCTIONS=\"['_main']\" \
 ")
 
-add_library(exprtkjs ${SOURCE_FILES})
-target_compile_definitions(exprtkjs PRIVATE EXPRTKJS_ENABLE_WASM=1)
-set_target_properties(exprtkjs PROPERTIES COMPILE_FLAGS "")
+add_library(arrow_wasm ${SOURCE_FILES})
+target_compile_definitions(arrow_wasm PRIVATE ARROW_WASM_ENABLE_WASM=1)
+set_target_properties(arrow_wasm PROPERTIES COMPILE_FLAGS "")
 
 # "esm/erspective.cpp.js" from CMAKE_EXECUTABLE_SYNTAX
-add_executable(exprtkjs_esm src/cpp/emscripten.cpp)
-target_link_libraries(exprtkjs_esm exprtkjs)
-target_link_options(exprtkjs_esm PRIVATE -s ENVIRONMENT=worker)
-target_compile_definitions(exprtkjs_esm PRIVATE EXPRTKJS_ENABLE_WASM=1)
-set_target_properties(exprtkjs_esm PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./esm/")
-set_target_properties(exprtkjs_esm PROPERTIES OUTPUT_NAME "exprtkjs.cpp")
+add_executable(arrow_wasm_esm src/cpp/emscripten.cpp)
+target_link_libraries(arrow_wasm_esm arrow_wasm)
+target_link_options(arrow_wasm_esm PRIVATE -s ENVIRONMENT=worker)
+target_compile_definitions(arrow_wasm_esm PRIVATE ARROW_WASM_ENABLE_WASM=1)
+set_target_properties(arrow_wasm_esm PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./esm/")
+set_target_properties(arrow_wasm_esm PROPERTIES OUTPUT_NAME "arrow_wasm.cpp")
 
-# "cjs/exprtkjs.cpp.js" from CMAKE_EXECUTABLE_SYNTAX
-add_executable(exprtkjs_cjs src/cpp/emscripten.cpp)
-target_link_libraries(exprtkjs_cjs exprtkjs)
-target_link_options(exprtkjs_cjs PRIVATE -s ENVIRONMENT=node)
-target_compile_definitions(exprtkjs_cjs PRIVATE EXPRTKJS_ENABLE_WASM=1)
-set_target_properties(exprtkjs_cjs PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./cjs/")
-set_target_properties(exprtkjs_cjs PROPERTIES OUTPUT_NAME "exprtkjs.cpp")
+# "cjs/arrow_wasm.cpp.js" from CMAKE_EXECUTABLE_SYNTAX
+add_executable(arrow_wasm_cjs src/cpp/emscripten.cpp)
+target_link_libraries(arrow_wasm_cjs arrow_wasm)
+target_link_options(arrow_wasm_cjs PRIVATE -s ENVIRONMENT=node)
+target_compile_definitions(arrow_wasm_cjs PRIVATE ARROW_WASM_ENABLE_WASM=1)
+set_target_properties(arrow_wasm_cjs PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./cjs/")
+set_target_properties(arrow_wasm_cjs PROPERTIES OUTPUT_NAME "arrow_wasm.cpp")

@@ -14,7 +14,7 @@
   },
   "exports": {
     ".": {
-        "node": "./dist/cjs/arrow-cpp-wasm.node.js"
+      "node": "./dist/cjs/arrow-cpp-wasm.node.js"
     },
     "./dist/": "./dist/",
     "./cjs/": "./dist/cjs/",
