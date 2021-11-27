@@ -1,0 +1,55 @@
+{
+  "name": "arrow-wasm-cpp",
+  "version": "0.0.1",
+  "description": "Arrow C++ compiled to webassembly",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timkpaine/arrow-wasm-cpp.js"
+  },
+  "license": "Apache-2.0",
+  "emscripten": "2.0.29",
+  "engines": {
+    "node": ">=8.12.0"
+  },
+  "exports": {
+    ".": {
+        "node": "./dist/cjs/arrow-cpp-wasm.node.js"
+    },
+    "./dist/": "./dist/",
+    "./cjs/": "./dist/cjs/",
+    "./esm/": "./dist/esm/",
+    "./src/": "./src/",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install_emsdk.js",
+    "build": "npm-run-all build:*",
+    "build:cpp": "node scripts/run_emsdk.js node src/cpp/arrow/build.js",
+    "build:babel": "babel src/js --source-maps --out-dir dist/esm",
+    "fix": "yarn lint --fix",
+    "lint": "eslint --ext js src/",
+    "test": "node scripts/test.js",
+    "clean": "node scripts/clean.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/cli": "^7.16.0",
+    "@babel/core": "^7.16.0",
+    "@babel/plugin-proposal-class-properties": "^7.16.0",
+    "@babel/plugin-proposal-decorators": "^7.16.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "babel-plugin-transform-custom-element-classes": "^0.1.0",
+    "cpx": "^1.5.0",
+    "dotenv": "^10.0.0",
+    "mkdirp": "^1.0.4",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.2"
+  },
+  "resolutions": {
+    "braces": "^2.3.1",
+    "glob-parent": "^5.1.2",
+    "set-value": "^4.0.1"
+  }
+}
