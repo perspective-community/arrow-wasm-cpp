@@ -1,12 +1,9 @@
 {
-  "name": "arrow-wasm-cpp",
+  "name": "apache-arrow-wasm",
   "version": "0.0.1",
   "description": "Arrow C++ compiled to webassembly",
   "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/timkpaine/arrow-wasm-cpp.js"
-  },
+  "repository": "https://github.com/timkpaine/arrow-wasm-cpp",
   "license": "Apache-2.0",
   "emscripten": "2.0.29",
   "engines": {
